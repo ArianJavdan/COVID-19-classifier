@@ -1,0 +1,13 @@
+Results with unchanged dataset:
+
+Train and Validation accuracy 5216/5216 [==============================] - 1602s 307ms/sample - loss: 0.0486        - accuracy: 0.9818 
+                                                                                              - val_loss: 1.1159    - val_accuracy: 0.7500
+Test accuracy: 624/624                  [==============================] - 50s 80ms/sample -    loss: 2.1031        - accuracy: 0.7404
+
+-----------------------------------------------------------------------------------------------------------------------
+
+Results with a better split dataset, 0.2 dropout and normalized data
+
+4064/4081 [============================>.] - ETA: 9s - loss: 0.2467 - acc: 0.9045 WARNING:tensorflow:Early stopping conditioned on metric `val_accuracy` which is not available. Available metrics are: loss,acc,val_loss,val_acc
+4081/4081 [==============================] - 2335s 572ms/sample - loss: 0.2460 - acc: 0.9049 - val_loss: 0.0884 - val_acc: 0.9777
+1192/1192 [==============================] - 207s 174ms/sample - loss: 0.1393 - acc: 0.9547

@@ -19,8 +19,8 @@ def load_data():
     #CREATE TRAIN DATA AND LABELS
     try:
         print("-----------> Trying to load the training data:")
-        train_x = np.load('data/train_x.npz')['train_x']
-        train_y = np.load('data/train_y.npz')['train_y']
+        train_x = np.load('data_1/train_x.npz')['train_x']
+        train_y = np.load('data_1/train_y.npz')['train_y']
         print("-----------> Successfully loaded the data:")
 
     except:
@@ -29,20 +29,25 @@ def load_data():
         train_x = []
         train_y = []
         
-        for root, dirs, files in os.walk('chest_xray/train'):
+        for root, dirs, files in os.walk('chest_xray/chest_xray/train'):
             if 'NORMAL' in root:
                 target = 0
             else:
                 target = 1
             for file in files:
-                
-                im = cv2.resize(cv2.imread(root + '/' + file), (226, 226)).astype(np.float32)
+                print(file)
+                im = cv2.resize(cv2.imread(root + '/' + file), (226, 226)).astype(np.float32) / 255.0
+                #Standardize each image separately
+                #im = tf.image.per_image_standardization(im)
                 train_x.append(im)
                 train_y.append(target)
-        np.savez('data/train_x.npz', train_x=train_x)
-        np.savez('data/train_y.npz', train_y=train_y)
+        np.savez('data_1/train_x.npz', train_x=train_x)
+        np.savez('data_1/train_y.npz', train_y=train_y)
+
+
+
     #CREATE VALIDATION DATA AND LABELS
-    try:
+    '''try:
         print("-----------> Trying to load the validation data:")
         val_x = np.load('data/val_x.npz')['val_x']
         val_y = np.load('data/val_y.npz')['val_y']
@@ -65,13 +70,13 @@ def load_data():
                 val_x.append(im)
                 val_y.append(target)
         np.savez('data/val_x.npz', val_x=val_x)
-        np.savez('data/val_y.npz', val_y=val_y)
+        np.savez('data/val_y.npz', val_y=val_y)'''
 
     #CREATE TEST DATA AND LABELS
     try:
         print("-----------> Trying to load the testing data:")
-        test_x = np.load('data/test_x.npz')['test_x']
-        test_y = np.load('data/test_y.npz')['test_y']
+        test_x = np.load('data_1/test_x.npz')['test_x']
+        test_y = np.load('data_1/test_y.npz')['test_y']
         print("-----------> Successfully loaded the data:")
 
     except:
@@ -80,19 +85,19 @@ def load_data():
         test_x = []
         test_y = []
         
-        for root, dirs, files in os.walk('chest_xray/test'):
+        for root, dirs, files in os.walk('chest_xray/chest_xray/test'):
             if 'NORMAL' in root:
                 target = 0
             else:
                 target = 1
             for file in files:
                 
-                im = cv2.resize(cv2.imread(root + '/' + file), (226, 226)).astype(np.float32)
+                im = cv2.resize(cv2.imread(root + '/' + file), (226, 226)).astype(np.float32) / 255.0
                 test_x.append(im)
                 test_y.append(target)
-        np.savez('data/test_x.npz', test_x=test_x)
-        np.savez('data/test_y.npz', test_y=test_y)
-    return train_x, train_y, val_x, val_y, test_x, test_y
+        np.savez('data_1/test_x.npz', test_x=test_x)
+        np.savez('data_1/test_y.npz', test_y=test_y)
+    return train_x, train_y, test_x, test_y
 
 def create_model():
     model = tf.keras.models.Sequential([
@@ -102,7 +107,7 @@ def create_model():
         ZeroPadding2D(padding = (1,1)),
         Conv2D(64,(3,3), activation = 'relu'),
         MaxPool2D(pool_size = (2,2), strides = (2,2)),# pading = 'same'),
-
+        #Dropout()
 
         ZeroPadding2D(padding = (1,1)),
         Conv2D(128,(3,3), activation = 'relu'),
@@ -136,9 +141,9 @@ def create_model():
 
         Flatten(),
         Dense(4096, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.2),
         Dense(4096, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.2),
         Dense(2, activation='softmax')
     ])
 
@@ -160,27 +165,34 @@ im = np.expand_dims(im, axis=0)
 out = model.predict(im)
 print(np.argmax(out))'''
 def main(): 
-    train_x, train_y, val_x, val_y, test_x, test_y = load_data()
-    print(train_x.shape)
-    print(val_x.shape)
-    print(test_x.shape)
+    train_x, train_y, test_x, test_y = load_data()
     model = create_model()
     
     #Viewing the summary of the model
-    model.summary()
-
 
     if os.path.isfile('weights'):
         model.load_weights('weights')
-    else:
-        model.fit(train_x, train_y, epochs=5, validation_data=(val_x, val_y), shuffle=True, callbacks=[EarlyStopping(patience = 3, monitor = "val_acc", mode="max", verbose = 2)])
-        model.save('weights')
-    model.evaluate(val_x,  val_y, verbose=1)
+   
+    model.fit(train_x, train_y, epochs=1, validation_split=0.125, shuffle=True, callbacks=[EarlyStopping(patience = 3, monitor = "val_accuracy", mode="max", verbose = 2)])
+    model.save('weights')
+        
+
+    #tf.keras.layers.Dropout(
+    #    rate, noise_shape=None, seed=None, **kwargs
+    #)
+
+    # rate: Float between 0 and 1. Fraction of the input units to drop.
+
+    # noise_shape: 1D integer tensor representing the shape of the binary 
+    # dropout mask that will be multiplied with the input. For instance, 
+    # if your inputs have shape (batch_size, timesteps, features) and you want 
+    # the dropout mask to be the same for all timesteps, you can use noise_shape=(batch_size, 1, features).
+
+    # seed: A Python integer to use as random seed.
 
     model.evaluate(test_x,  test_y, verbose=1)
 
-
-
+    
 if __name__ == "__main__":
     main()
 
