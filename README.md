@@ -1,1 +1,1 @@
-# Corona-classifier
+# COVID-19 Classifier
